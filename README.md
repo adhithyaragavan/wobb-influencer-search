@@ -37,8 +37,9 @@ npm run preview  # preview the production build
 9. **Shortlist platform mislabel** — opening a profile via a direct/bookmarked URL with no `?platform=` param showed "Unknown" on screen but silently saved the shortlisted item as `instagram`. The Add-to-list button is now disabled (with an explanatory tooltip) instead of guessing in that case.
 10. **Invalid HTML / accessibility**: the profile card nested a `<button>` inside a `<Link>` (`<a>`), which the HTML spec disallows and which assistive tech handles inconsistently — restructured to the "stretched link" pattern. The shortlist drawer (`role="dialog"`) had no `Escape`-to-close, no focus management, and let keyboard focus leak into the page behind it — now focuses itself on open, restores focus to the trigger on close, closes on `Escape`, and marks the background `inert` while open. The platform filter declared ARIA `tablist`/`tab` roles without the arrow-key behavior that implies — simplified to plain toggle buttons (`aria-pressed`) that match how they actually behave.
 11. **Platform tab reset on back-navigation** — `SearchPage` kept platform/search in local `useState`, so clicking a profile then going back always landed back on the Instagram tab. State now lives in the URL (`?platform=&q=`) via `useSearchParams`, so both the "Back to search" link and the browser back button restore exactly where the user was.
-12. **Broken avatar images (mainly YouTube)** — several `yt3.googleusercontent.com` URLs in the sample data are stale and 404 (verified directly with `curl`), rendering as broken-image icons. Added an `Avatar` component that falls back to an initial on a stable color via the `<img>`'s `onError`, used everywhere a profile picture renders.
+12. **Broken avatar images (mainly YouTube)** — several `yt3.googleusercontent.com` URLs in the sample data were stale and 404ing (verified directly with `curl`). Added an `Avatar` component that falls back to an initial on a stable color via the `<img>`'s `onError`, used everywhere a profile picture renders — a safety net independent of fix #14 below, since any hotlinked social CDN URL can go stale again later.
 13. **Dead-end "could not load" for most profiles** — most search results have no matching detail JSON (by design of the sample data), which previously always showed a hard error. The profile card and shortlist panel now pass the summary they already have via router `state`, so a missing detail file renders a clearly-labeled partial profile (picture, name, followers, engagement rate, working Add-to-list) instead of a dead end; a truly data-less direct URL still shows the original error as the last resort.
+14. **Wrong/missing YouTube usernames + stale avatar URLs, corrected against the real accounts** — cross-checked each YouTube entry's channel ID against the real channel (via `og:image`/`externalId`, not guessed) and found actual data errors: `checkgate` → `CoComelon`, `MrBeast6000` → `MrBeast`, `WWEFanNation` → `WWE`, `setindia` → `SETIndia`, and three entries (`VladandNiki`, `KidsDianaShow`, `LikeNastyaofficial`) had no `username` at all. All 10 YouTube avatar URLs were replaced with fresh, `curl`-verified working ones sourced from each channel's current page. Fixing `MrBeast6000` → `MrBeast` surfaced a real structural bug: the detail-JSON lookup is keyed by username (`${username}.json`), and TikTok already has an unrelated `mrbeast.json` (Jimmy Donaldson's TikTok handle happens to collide with his corrected YouTube one) — same-cased or not, `MrBeast.json` vs `mrbeast.json` collide outright on case-insensitive filesystems (macOS/Windows), a landmine that would behave differently in Linux CI/deploy. Fixed by making `profileLoader`/`useProfile` platform-aware: they try `${username}-${platform}.json` first, falling back to the plain `${username}.json`; the YouTube MrBeast file was renamed to `MrBeast-youtube.json` accordingly.
 
 ### Features & UX
 - Introduced **Zustand** with the `persist` middleware for the shortlist store (`src/store/useShortlistStore.ts`). *Note: the starter did not actually use React Context or any state management — so "replace Context with Zustand" is realized here as introducing Zustand as the single source of truth for the shortlist.*
@@ -51,8 +52,8 @@ npm run preview  # preview the production build
 ```
 src/
   components/    UI: Layout, PlatformFilter, ProfileList, ProfileCard,
-                 VerifiedBadge, ShortlistButton, ShortlistPanel
-  hooks/         useProfile, useDebouncedValue
+                 Avatar, VerifiedBadge, ShortlistButton, ShortlistPanel
+  hooks/         useProfile, useDebouncedValue, useDocumentTitle
   pages/         SearchPage, ProfileDetailPage
   store/         useShortlistStore (Zustand + persist)
   utils/         dataHelpers, formatters, profileLoader
@@ -71,21 +72,21 @@ src/
 
 ## Assumptions
 - The starter's task "replace React Context with Zustand" is interpreted as "introduce Zustand for shared state," since the starter shipped with no Context/state layer.
-- Some search results have no matching profile JSON (e.g. `@leomessi`); this is treated as a valid "profile not available" state rather than a crash.
-- Platform/search filter state is kept local to `SearchPage` (see trade-offs); only the shortlist is global + persisted.
-- The provided static JSON is the data source; `loadProfileByUsername` keeps the starter's simulated-async dynamic import.
+- Some search results have no matching profile JSON (e.g. `@leomessi`); this is treated as a valid "profile not available" state, rendering a partial profile from the search summary rather than a crash or a dead end.
+- The provided static JSON is the data source; `loadProfileByUsername` keeps the starter's simulated-async dynamic import. Usernames and avatar URLs were corrected against the real accounts (see fix #14), but the data otherwise remains a static, point-in-time snapshot — not a live API.
 
 ## Trade-offs
-- **Local filter state vs. global store:** platform/search state stays in `SearchPage` with `useMemo` — it isn't shared across routes, so a store would add indirection without benefit. Only genuinely shared, persisted state (the shortlist) lives in Zustand.
+- **URL-synced search state, Zustand-only for the shortlist:** platform/search live in `SearchPage`'s URL query params (so back-navigation restores them) rather than a global store — they aren't needed outside this one page. Only genuinely cross-page, persisted state (the shortlist) lives in Zustand.
 - **Hand-built components vs. a UI kit:** chose Tailwind + a few small helpers over a component library to keep the bundle lean and the styling fully controlled, at the cost of writing primitives by hand.
 - **Compact number formatting:** one rounding rule (`formatCompact`) is used everywhere for consistency, even though a couple of call sites previously rounded differently.
+- **Hotlinked avatar URLs can go stale again:** fix #14 points at real, currently-working photo URLs, but any social platform's CDN link can expire later the same way the original sample data's did — that's inherent to hotlinking rather than hosting the assets ourselves. The `Avatar` fallback (fix #12) is the durable answer to that risk, not a one-time re-link.
 
 ## Remaining improvements
 - Automated tests (unit tests for the store/formatters, a Playwright happy-path).
 - `useIsShortlisted` does an O(n) scan per card on every store update — fine at this data size, would want an indexed lookup (`Set`/`Record`) if the shortlist or result list grew much larger.
 - List virtualization if the dataset grows large.
 - Deployment (Vercel/Netlify) — not set up for this submission.
-- URL-synced filters (shareable search state) and richer profile analytics (the JSON includes `stat_history`, not currently surfaced).
+- Richer profile analytics (the JSON includes `stat_history`, not currently surfaced).
 
 ## Verification
-`npm run build` and `npm run lint` pass. The app was verified end-to-end with a headless-Chrome regression pass covering: case-insensitive search on all three platforms (including the YouTube crash fix), a real profile detail page rendering correct stats, the graceful "could not load" fallback for profiles with no detail JSON, the platform-mislabel fix (disabled Add-to-list + "Unknown" label on param-less URLs), the full add/dedupe/persist-after-reload/remove shortlist flow, per-route document titles, zero invalid `<button>`-in-`<a>` nesting, and the shortlist dialog's focus management (focus-in-on-open, `Escape`-to-close, focus-restore-on-close, background `inert` while open) — all with zero console/page errors.
+`npm run build` and `npm run lint` pass. The app was verified end-to-end with a headless-Chrome regression pass covering: case-insensitive search on all three platforms (including the YouTube crash fix), a real profile detail page rendering correct stats, the graceful "could not load" fallback for profiles with no detail JSON, the platform-mislabel fix (disabled Add-to-list + "Unknown" label on param-less URLs), the full add/dedupe/persist-after-reload/remove shortlist flow, per-route document titles, zero invalid `<button>`-in-`<a>` nesting, the shortlist dialog's focus management (focus-in-on-open, `Escape`-to-close, focus-restore-on-close, background `inert` while open), back-navigation restoring the platform tab, all 10 YouTube avatars loading real images, and MrBeast's YouTube detail page loading full stats from the renamed/disambiguated file (with the separate TikTok `mrbeast` profile unaffected) — all with zero console/page errors. Every corrected username and avatar URL was independently checked against the real account (`curl`-verified HTTP 200, channel ID cross-referenced via `externalId`), not guessed.
