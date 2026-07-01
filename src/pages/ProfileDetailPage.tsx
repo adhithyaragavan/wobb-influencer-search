@@ -74,7 +74,7 @@ export function ProfileDetailPage() {
   const isValidPlatform = PLATFORMS.includes(platformParam as Platform);
   const platform = isValidPlatform ? (platformParam as Platform) : null;
   const platformLabel = platform ? getPlatformLabel(platform) : "Unknown";
-  const { profile: user, status } = useProfile(username);
+  const { profile: user, status } = useProfile(username, platform);
   const stats = useMemo(() => (user ? buildStats(user) : []), [user]);
 
   // Passed via router `state` from the search/shortlist card the user came

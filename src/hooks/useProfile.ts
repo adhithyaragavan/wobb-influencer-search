@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { FullUserProfile } from "@/types";
+import type { FullUserProfile, Platform } from "@/types";
 import { loadProfileByUsername } from "@/utils/profileLoader";
 
 type Status = "loading" | "loaded" | "error";
@@ -16,19 +16,23 @@ interface ResolvedEntry {
 }
 
 /**
- * Loads a full profile by username. Guards against out-of-order responses:
- * results are tagged with the username they belong to, and the loading state
- * is derived (not set synchronously in the effect), so a slow response for a
- * previous username can never overwrite the current one.
+ * Loads a full profile by username (disambiguated by platform when known —
+ * see profileLoader.ts). Guards against out-of-order responses: results are
+ * tagged with the username they belong to, and the loading state is derived
+ * (not set synchronously in the effect), so a slow response for a previous
+ * username can never overwrite the current one.
  */
-export function useProfile(username: string | undefined): UseProfileResult {
+export function useProfile(
+  username: string | undefined,
+  platform?: Platform | null
+): UseProfileResult {
   const [entry, setEntry] = useState<ResolvedEntry | null>(null);
 
   useEffect(() => {
     if (!username) return;
 
     let active = true;
-    loadProfileByUsername(username)
+    loadProfileByUsername(username, platform ?? undefined)
       .then((data) => {
         if (!active) return;
         setEntry({
@@ -44,7 +48,7 @@ export function useProfile(username: string | undefined): UseProfileResult {
     return () => {
       active = false;
     };
-  }, [username]);
+  }, [username, platform]);
 
   const isCurrent = entry !== null && entry.username === username;
   return {
