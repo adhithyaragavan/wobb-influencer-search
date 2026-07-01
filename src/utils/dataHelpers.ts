@@ -18,9 +18,21 @@ export function getSearchData(platform: Platform): SearchData {
   return platformData[platform];
 }
 
+/**
+ * Some YouTube entries in the sample data have no `username` field (channels
+ * are identified by `handle` instead), which crashed search/navigation
+ * downstream. Normalize once here so every UserProfileSummary is guaranteed
+ * a non-empty `username`.
+ */
 export function extractProfiles(platform: Platform): UserProfileSummary[] {
   const data = getSearchData(platform);
-  return data.accounts.map((item) => item.account.user_profile);
+  return data.accounts.map((item) => {
+    const profile = item.account.user_profile;
+    return {
+      ...profile,
+      username: profile.username || profile.handle || profile.user_id,
+    };
+  });
 }
 
 export function filterProfiles(
