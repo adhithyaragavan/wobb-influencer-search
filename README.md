@@ -1,80 +1,83 @@
-# Wobb Frontend Assignment
+# Wobb — Influencer Search
 
-A starter influencer search application built with **React**, **TypeScript**, **Vite**, and **Tailwind CSS**. This project is intentionally left in a rough-but-working state for candidates to improve.
+A polished influencer-search app built on the Wobb starter (React 19 + TypeScript + Vite + Tailwind CSS v4).
+Browse creators across Instagram, YouTube, and TikTok, open a detailed profile, and build a persistent shortlist.
 
-## Getting Started
+> Built for the Wobb "vibe-coder" take-home. This repository is an original repo (not a fork of the starter).
+
+## Getting started
 
 ```bash
-npm install
-npm run dev
+npm install      # clean install (no flags needed)
+npm run dev      # http://localhost:5173
+npm run build    # tsc -b && vite build
+npm run lint     # eslint
+npm run preview  # preview the production build
 ```
 
-Open [http://localhost:5173](http://localhost:5173) to view the app.
+## Highlights
 
-## What's Included
+- **Case-insensitive search** by username or full name.
+- **Platform filter** (Instagram / YouTube / TikTok) with an accessible tab UI.
+- **Profile detail** page with a clean stat grid and graceful loading / not-found states.
+- **Add to List (shortlist)** — add/remove from both the list card and the profile page, deduped by `user_id`, viewable in a slide-over drawer, and **persisted across refresh** via `localStorage`.
+- **Responsive** mobile-first layout, **accessible** (keyboard-navigable, ARIA, focus rings), with subtle **animations**.
 
-- **Search / Dashboard** — filter influencers by platform (Instagram, YouTube, TikTok) and search by username or full name
-- **Profile Details** — click a profile to view extended data loaded from individual JSON files
-- **Routing** — `react-router-dom` with `/` (search) and `/profile/:username` (details)
+## What changed
 
-Sample data lives in:
+### Bugs fixed
+1. **Case-sensitive username search** — `filterProfiles` compared the raw `username` against the query while lowercasing the full-name branch, so username matches were case-sensitive. Both sides are now normalized. (`src/utils/dataHelpers.ts`)
+2. **Engagement rate off by 100×** — the profile page computed `engagement_rate * 10000` inline (e.g. Cristiano showed `125.51%`). It now uses the existing, correct `formatEngagementRate` (`* 100` → `1.26%`). (`src/pages/ProfileDetailPage.tsx`)
+3. **Mislabeled "Engagements" stat** — the card labeled *Engagements* (a count) was rendering the engagement **rate**. It now shows the actual `engagements` count.
+4. **Triplicated follower formatters** — three near-duplicate implementations with different rounding (`formatFollowers`, `formatFollowersDetail`, `formatFollowersLocal`) were consolidated into a single `formatCompact` (`src/utils/formatters.ts`).
+5. **Dead code removed** — the unused `SearchBar` component, the console-log-only `clickCount` state (which also had a stale-closure bug), and a leftover `data-search` attribute.
+6. **Broken install** — the starter listed `react-beautiful-dnd`, which is unused and incompatible with React 19, so a plain `npm install` failed with a peer-dependency error. Removed it; `npm install` now succeeds with no flags.
+7. **Stale-response race** — the detail page could overwrite fresh data with a slow response for a previous username. The new `useProfile` hook tags results by username and ignores stale ones.
 
-- `src/assets/data/search/` — platform search results (10 profiles each)
-- `src/assets/data/profiles/` — detailed profile JSON per username
+### Features & UX
+- Introduced **Zustand** with the `persist` middleware for the shortlist store (`src/store/useShortlistStore.ts`). *Note: the starter did not actually use React Context or any state management — so "replace Context with Zustand" is realized here as introducing Zustand as the single source of truth for the shortlist.*
+- Full **UI/UX redesign** (clean light SaaS): sticky header with live shortlist count, card grid, pill platform tabs, redesigned profile page, empty/loading/error states.
+- **Accessibility:** cards are real `<Link>`s (keyboard-focusable), all images have `alt` text, the external link uses `rel="noopener noreferrer"`, icon-only buttons have `aria-label`s, the verified badge is labeled, the result count is an `aria-live` region, and everything has visible focus rings.
+- **Performance:** `useMemo` for the derived profile lists, `React.memo` on `ProfileCard`, and a **debounced** search input (`useDebouncedValue`) so filtering doesn't run on every keystroke.
 
-## How to Submit
+### Structure
+```
+src/
+  components/    UI: Layout, PlatformFilter, ProfileList, ProfileCard,
+                 VerifiedBadge, ShortlistButton, ShortlistPanel
+  hooks/         useProfile, useDebouncedValue
+  pages/         SearchPage, ProfileDetailPage
+  store/         useShortlistStore (Zustand + persist)
+  utils/         dataHelpers, formatters, profileLoader
+  types/         shared TypeScript interfaces
+```
 
-1. **Download or clone** this starter project to your machine.
-2. **Create a new repository** on your own GitHub account. Do not fork the original assignment repo — push your work to a repo you own.
-3. Complete the tasks below and push your changes to that repository.
-4. **Share the public GitHub repository URL** with us as your submission.
+## Libraries added
+| Library | Why |
+| --- | --- |
+| **zustand** | Small, ergonomic state management for the shortlist; `persist` middleware gives free `localStorage` persistence. |
+| **lucide-react** | Consistent, tree-shakeable icon set. |
+| **framer-motion** | Drawer slide-in and list add/remove micro-interactions. |
+| **clsx** | Readable conditional class composition. |
 
-### Deadline (strict)
+`react-beautiful-dnd` was **removed** (unused and React-19-incompatible).
 
-- **Due:** **2 July 2026, 2:00 PM IST** (Indian Standard Time, UTC+5:30)
-- **Any git commits made after this deadline will disqualify your submission.** We will only consider the repository state as of the deadline; late commits will not be reviewed.
-- Make sure your final work is pushed **before** the cutoff.
+## Assumptions
+- The starter's task "replace React Context with Zustand" is interpreted as "introduce Zustand for shared state," since the starter shipped with no Context/state layer.
+- Some search results have no matching profile JSON (e.g. `@leomessi`); this is treated as a valid "profile not available" state rather than a crash.
+- Platform/search filter state is kept local to `SearchPage` (see trade-offs); only the shortlist is global + persisted.
+- The provided static JSON is the data source; `loadProfileByUsername` keeps the starter's simulated-async dynamic import.
 
-## AI Usage
+## Trade-offs
+- **Local filter state vs. global store:** platform/search state stays in `SearchPage` with `useMemo` — it isn't shared across routes, so a store would add indirection without benefit. Only genuinely shared, persisted state (the shortlist) lives in Zustand.
+- **Hand-built components vs. a UI kit:** chose Tailwind + a few small helpers over a component library to keep the bundle lean and the styling fully controlled, at the cost of writing primitives by hand.
+- **Compact number formatting:** one rounding rule (`formatCompact`) is used everywhere for consistency, even though a couple of call sites previously rounded differently.
 
-You may use any AI tools (Cursor, ChatGPT, Claude, GitHub Copilot, etc.). We are evaluating your final solution and engineering decisions.
+## Remaining improvements
+- Automated tests (unit tests for the store/formatters, a Playwright happy-path).
+- List virtualization if the dataset grows large.
+- Deployment (Vercel/Netlify) — not set up for this submission.
+- URL-synced filters (shareable search state) and richer profile analytics (the JSON includes `stat_history`).
 
-## Your Tasks
-
-Complete the following as part of your submission:
-
-1. **Find and fix all bugs and quality issues** — the codebase contains intentional bugs and quality issues. Identify and resolve them.
-
-2. **Completely redesign the UI/UX** — replace the basic layout with a polished, modern interface. Focus on usability, visual hierarchy, and delight.
-
-3. **Replace React Context with Zustand** — when you implement state management for the selected list, use [Zustand](https://github.com/pmndrs/zustand) instead of React Context.
-
-4. **Implement "Select profile & Add to List"** — the disabled "Add to List" button is a stub. Build the full feature:
-   - Select / add profiles to a persistent list
-   - View and manage the selected list
-   - Handle duplicates appropriately
-
-5. **Improve code quality and project structure** — refactor as needed, add proper types, and follow React best practices.
-
-6. **Optimize performance** — apply sensible optimizations where appropriate.
-
-7. **Use any libraries you need** — you are not limited to the current stack. Choose tools that help you deliver a great result (UI kits, state managers, testing libraries, etc.).
-
-## Scripts
-
-| Command        | Description              |
-| -------------- | ------------------------ |
-| `npm run dev`  | Start development server |
-| `npm run build`| Production build         |
-| `npm run lint` | Run ESLint               |
-
-## Submission Notes
-
-- Document any assumptions or trade-offs in your README
-- Ensure `npm run build` passes before submitting
-- Focus on demonstrating your judgment — not every possible feature needs to be built, but the core assignment items should be addressed thoughtfully
-- Double-check that your repo is public (or that we have access) and that the link is included in your submission
-- Please make meaningful commits throughout your work. We may review your commit history.
-- **Bonus:** Deploying the app (e.g. Vercel, Netlify, GitHub Pages) is optional but will be considered a plus — include the live URL in your submission if you do
-
-Good luck!
+## Verification
+`npm run build` and `npm run lint` pass. The app was verified end-to-end (headless Chrome): search is case-insensitive, engagement rate/engagements render correctly, add/remove dedupes by `user_id`, the shortlist survives a page reload, the layout reflows to a single column on mobile, and cards are keyboard-navigable.
