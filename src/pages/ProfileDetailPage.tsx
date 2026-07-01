@@ -56,9 +56,12 @@ function StatTile({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-const BackLink = () => (
+// Carries the platform back to the search page — a plain `to="/"` would
+// drop it and always land back on the Instagram tab regardless of where
+// the user actually came from.
+const BackLink = ({ platform }: { platform: Platform | null }) => (
   <Link
-    to="/"
+    to={platform ? `/?platform=${platform}` : "/"}
     className="mb-6 inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
   >
     <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -99,7 +102,7 @@ export function ProfileDetailPage() {
   if (!username) {
     return (
       <Layout title="Profile">
-        <BackLink />
+        <BackLink platform={platform} />
         <p className="text-slate-600">Invalid profile.</p>
       </Layout>
     );
@@ -108,7 +111,7 @@ export function ProfileDetailPage() {
   if (status === "loading") {
     return (
       <Layout title={`@${username}`}>
-        <BackLink />
+        <BackLink platform={platform} />
         <div className="flex items-center gap-2 text-slate-400">
           <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
           <span>Loading profile…</span>
@@ -132,7 +135,7 @@ export function ProfileDetailPage() {
 
     return (
       <Layout title="">
-        <BackLink />
+        <BackLink platform={platform} />
 
         <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="h-24 bg-gradient-to-r from-indigo-500 to-violet-500" />
@@ -193,7 +196,7 @@ export function ProfileDetailPage() {
   if (status === "error" || !user) {
     return (
       <Layout title={`@${username}`}>
-        <BackLink />
+        <BackLink platform={platform} />
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center">
           <p className="font-medium text-rose-700">
             Could not load profile details for @{username}.
@@ -205,7 +208,7 @@ export function ProfileDetailPage() {
 
   return (
     <Layout title="">
-      <BackLink />
+      <BackLink platform={platform} />
 
       <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="h-24 bg-gradient-to-r from-indigo-500 to-violet-500" />
