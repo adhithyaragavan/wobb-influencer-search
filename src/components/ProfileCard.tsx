@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { Platform, UserProfileSummary } from "@/types";
 import { formatCompact, formatEngagementRate } from "@/utils/formatters";
 import { toShortlistItem } from "@/utils/dataHelpers";
+import { Avatar } from "./Avatar";
 import { VerifiedBadge } from "./VerifiedBadge";
 import { ShortlistButton } from "./ShortlistButton";
 
@@ -18,15 +19,19 @@ function ProfileCardComponent({ profile, platform }: ProfileCardProps) {
           ShortlistButton's <button> inside an <a>, which HTML disallows. */}
       <Link
         to={`/profile/${profile.username}?platform=${platform}`}
+        // Carry the summary we already have so the detail page can render
+        // something useful even for profiles with no full-detail JSON,
+        // instead of a hard "could not load" error.
+        state={{ summary: profile }}
         aria-label={`View @${profile.username}'s profile`}
         className="absolute inset-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
       />
 
-      <img
+      <Avatar
         src={profile.picture}
         alt={`${profile.fullname} profile photo`}
-        loading="lazy"
-        className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-slate-100"
+        label={profile.fullname}
+        className="h-14 w-14 ring-2 ring-slate-100"
       />
 
       <div className="min-w-0 flex-1">

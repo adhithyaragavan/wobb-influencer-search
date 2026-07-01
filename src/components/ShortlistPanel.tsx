@@ -5,6 +5,7 @@ import { Trash2, X } from "lucide-react";
 import { useShortlistStore } from "@/store/useShortlistStore";
 import { getPlatformLabel } from "@/utils/dataHelpers";
 import { formatCompact } from "@/utils/formatters";
+import { Avatar } from "./Avatar";
 
 interface ShortlistPanelProps {
   open: boolean;
@@ -99,14 +100,15 @@ export function ShortlistPanel({ open, onClose }: ShortlistPanelProps) {
                       >
                         <Link
                           to={`/profile/${item.username}?platform=${item.platform}`}
+                          state={{ summary: item }}
                           onClick={onClose}
                           className="flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
                         >
-                          <img
+                          <Avatar
                             src={item.picture}
                             alt=""
-                            loading="lazy"
-                            className="h-10 w-10 shrink-0 rounded-full object-cover"
+                            label={item.fullname}
+                            className="h-10 w-10"
                           />
                           <div className="min-w-0 text-left">
                             <p className="truncate text-sm font-medium text-slate-900">
