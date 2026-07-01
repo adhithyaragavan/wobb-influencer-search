@@ -95,9 +95,7 @@ export function ProfileDetailPage() {
             <div className="border p-2 rounded">
               <div className="text-gray-500">Engagement Rate</div>
               <div className="font-semibold">
-                {user.engagement_rate !== undefined
-                  ? (user.engagement_rate * 10000).toFixed(2) + "%"
-                  : "N/A"}
+                {formatEngagementRate(user.engagement_rate)}
               </div>
             </div>
             {user.posts_count !== undefined && (
@@ -132,7 +130,7 @@ export function ProfileDetailPage() {
               <div className="border p-2 rounded">
                 <div className="text-gray-500">Engagements</div>
                 <div className="font-semibold">
-                  {formatEngagementRate(user.engagement_rate)}
+                  {user.engagements.toLocaleString()}
                 </div>
               </div>
             )}
