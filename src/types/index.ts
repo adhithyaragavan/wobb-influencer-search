@@ -14,9 +14,20 @@ export interface UserProfileSummary {
   avg_views?: number;
 }
 
+/**
+ * The actual shape of a profile inside the raw search JSON. Some entries
+ * (a few YouTube channels) have no `username` at all — only `handle` — so
+ * unlike `UserProfileSummary`, `username` here is honestly optional.
+ * `extractProfiles` (dataHelpers.ts) is the only place that should read this
+ * type; everywhere else should consume the normalized `UserProfileSummary`.
+ */
+export type RawSearchProfile = Omit<UserProfileSummary, "username"> & {
+  username?: string;
+};
+
 export interface SearchAccount {
   account: {
-    user_profile: UserProfileSummary;
+    user_profile: RawSearchProfile;
     audience_source: string;
   };
 }
@@ -27,15 +38,10 @@ export interface SearchData {
 }
 
 export interface FullUserProfile extends UserProfileSummary {
-  type?: string;
   description?: string;
-  is_business?: boolean;
   posts_count?: number;
   avg_likes?: number;
   avg_comments?: number;
-  avg_reels_plays?: number;
-  gender?: string;
-  age_group?: string;
 }
 
 /**

@@ -1,8 +1,20 @@
 import type { ProfileDetailResponse } from "@/types";
 
-const profileModules = import.meta.glob<ProfileDetailResponse>(
-  "../assets/data/profiles/*.json"
-);
+const profileModules = import.meta.glob<unknown>("../assets/data/profiles/*.json");
+
+/**
+ * Minimal runtime check for the shape the app actually reads
+ * (`data.user_profile`). Replaces a blind `as ProfileDetailResponse` cast so
+ * a malformed/truncated profile JSON fails gracefully into the existing
+ * "could not load" UI instead of crashing later when a field is accessed.
+ */
+function isProfileDetailResponse(value: unknown): value is ProfileDetailResponse {
+  if (typeof value !== "object" || value === null) return false;
+  const data = (value as Record<string, unknown>).data;
+  if (typeof data !== "object" || data === null) return false;
+  const userProfile = (data as Record<string, unknown>).user_profile;
+  return typeof userProfile === "object" && userProfile !== null;
+}
 
 export async function loadProfileByUsername(
   username: string
@@ -15,7 +27,6 @@ export async function loadProfileByUsername(
   }
 
   const result = await loader();
-  const data =
-    (result as { default?: ProfileDetailResponse }).default ?? result;
-  return data as ProfileDetailResponse;
+  const data = (result as { default?: unknown }).default ?? result;
+  return isProfileDetailResponse(data) ? data : null;
 }
