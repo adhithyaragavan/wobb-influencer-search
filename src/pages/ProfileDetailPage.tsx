@@ -7,6 +7,7 @@ import type { Platform } from "@/types";
 import { formatCompact, formatEngagementRate } from "@/utils/formatters";
 import { PLATFORMS, getPlatformLabel, toShortlistItem } from "@/utils/dataHelpers";
 import { useProfile } from "@/hooks/useProfile";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 function StatTile({ label, value }: { label: string; value: string | number }) {
   return (
@@ -37,6 +38,16 @@ export function ProfileDetailPage() {
   const platform = isValidPlatform ? (platformParam as Platform) : null;
   const platformLabel = platform ? getPlatformLabel(platform) : "Unknown";
   const { profile: user, status } = useProfile(username);
+
+  useDocumentTitle(
+    !username
+      ? "Profile · Wobb"
+      : status === "loaded" && user
+        ? `@${user.username} · Wobb`
+        : status === "error"
+          ? `@${username} not found · Wobb`
+          : `Loading @${username}… · Wobb`
+  );
 
   if (!username) {
     return (

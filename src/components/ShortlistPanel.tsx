@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Trash2, X } from "lucide-react";
@@ -14,6 +15,29 @@ export function ShortlistPanel({ open, onClose }: ShortlistPanelProps) {
   const items = useShortlistStore((s) => s.items);
   const remove = useShortlistStore((s) => s.remove);
   const clear = useShortlistStore((s) => s.clear);
+  const panelRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+
+  // Move focus into the dialog on open, and back to whatever triggered it
+  // (the header's "Shortlist" button) on close, per the modal dialog pattern.
+  useEffect(() => {
+    if (open) {
+      triggerRef.current = document.activeElement as HTMLElement | null;
+      panelRef.current?.focus();
+    } else {
+      triggerRef.current?.focus();
+    }
+  }, [open]);
+
+  // Escape closes the dialog, matching standard modal keyboard behavior.
+  useEffect(() => {
+    if (!open) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
 
   return (
     <AnimatePresence>
@@ -28,7 +52,9 @@ export function ShortlistPanel({ open, onClose }: ShortlistPanelProps) {
             aria-hidden="true"
           />
           <motion.aside
-            className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl"
+            ref={panelRef}
+            tabIndex={-1}
+            className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col bg-white shadow-2xl focus:outline-none"
             role="dialog"
             aria-modal="true"
             aria-label="Shortlisted profiles"

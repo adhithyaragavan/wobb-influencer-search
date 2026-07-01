@@ -19,7 +19,7 @@ export function PlatformFilter({
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div
-        role="tablist"
+        role="group"
         aria-label="Filter by platform"
         className="inline-flex rounded-xl bg-slate-100 p-1"
       >
@@ -27,8 +27,7 @@ export function PlatformFilter({
           <button
             key={p}
             type="button"
-            role="tab"
-            aria-selected={selected === p}
+            aria-pressed={selected === p}
             onClick={() => onChange(p)}
             className={clsx(
               "rounded-lg px-4 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",

@@ -13,10 +13,15 @@ interface ProfileCardProps {
 
 function ProfileCardComponent({ profile, platform }: ProfileCardProps) {
   return (
-    <Link
-      to={`/profile/${profile.username}?platform=${platform}`}
-      className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-    >
+    <div className="group relative flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md">
+      {/* Stretched link: the whole card is clickable without nesting the
+          ShortlistButton's <button> inside an <a>, which HTML disallows. */}
+      <Link
+        to={`/profile/${profile.username}?platform=${platform}`}
+        aria-label={`View @${profile.username}'s profile`}
+        className="absolute inset-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+      />
+
       <img
         src={profile.picture}
         alt={`${profile.fullname} profile photo`}
@@ -50,8 +55,11 @@ function ProfileCardComponent({ profile, platform }: ProfileCardProps) {
         </div>
       </div>
 
-      <ShortlistButton item={toShortlistItem(profile, platform)} />
-    </Link>
+      <ShortlistButton
+        item={toShortlistItem(profile, platform)}
+        className="relative z-10"
+      />
+    </div>
   );
 }
 

@@ -15,7 +15,13 @@ export function Layout({ children, title }: LayoutProps) {
 
   return (
     <div className="min-h-svh">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
+      {/* Keep background content out of the tab order and hidden from
+          assistive tech while the shortlist dialog is open, since it isn't
+          a full focus trap. */}
+      <header
+        inert={panelOpen}
+        className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur"
+      >
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Link
             to="/"
@@ -49,7 +55,7 @@ export function Layout({ children, title }: LayoutProps) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
+      <main inert={panelOpen} className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
         {title && (
           <h1 className="mb-6 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             {title}

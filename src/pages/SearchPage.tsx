@@ -5,8 +5,11 @@ import { PlatformFilter } from "@/components/PlatformFilter";
 import { ProfileList } from "@/components/ProfileList";
 import { extractProfiles, filterProfiles } from "@/utils/dataHelpers";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 export function SearchPage() {
+  useDocumentTitle("Find Influencers · Wobb");
+
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedQuery = useDebouncedValue(searchQuery, 200);
