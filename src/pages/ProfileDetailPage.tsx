@@ -33,9 +33,9 @@ export function ProfileDetailPage() {
   const { username } = useParams<{ username: string }>();
   const [searchParams] = useSearchParams();
   const platformParam = searchParams.get("platform") ?? "";
-  const platformLabel = PLATFORMS.includes(platformParam as Platform)
-    ? getPlatformLabel(platformParam as Platform)
-    : "Unknown";
+  const isValidPlatform = PLATFORMS.includes(platformParam as Platform);
+  const platform = isValidPlatform ? (platformParam as Platform) : null;
+  const platformLabel = platform ? getPlatformLabel(platform) : "Unknown";
   const { profile: user, status } = useProfile(username);
 
   if (!username) {
@@ -113,15 +113,18 @@ export function ProfileDetailPage() {
               </div>
             </div>
 
-            <ShortlistButton
-              item={toShortlistItem(
-                user,
-                (PLATFORMS.includes(platformParam as Platform)
-                  ? platformParam
-                  : "instagram") as Platform
-              )}
-              size="full"
-            />
+            {platform ? (
+              <ShortlistButton item={toShortlistItem(user, platform)} size="full" />
+            ) : (
+              <button
+                type="button"
+                disabled
+                title="Open this profile from search to add it to your shortlist"
+                className="inline-flex cursor-not-allowed items-center justify-center rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-400"
+              >
+                Add to list
+              </button>
+            )}
           </div>
 
           {user.description && (
