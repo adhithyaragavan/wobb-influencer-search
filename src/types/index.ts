@@ -38,6 +38,20 @@ export interface FullUserProfile extends UserProfileSummary {
   age_group?: string;
 }
 
+/**
+ * A profile saved to the user's shortlist. Stores just enough to render the
+ * shortlist panel without re-fetching, plus the platform it was found on.
+ */
+export interface ShortlistItem {
+  user_id: string;
+  username: string;
+  fullname: string;
+  picture: string;
+  followers: number;
+  is_verified: boolean;
+  platform: Platform;
+}
+
 export interface ProfileDetailResponse {
   cached?: boolean;
   data: {
