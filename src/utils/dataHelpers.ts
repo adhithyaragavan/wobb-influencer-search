@@ -1,7 +1,12 @@
 import instagramData from "@/assets/data/search/instagram.json";
 import youtubeData from "@/assets/data/search/youtube.json";
 import tiktokData from "@/assets/data/search/tiktok.json";
-import type { Platform, SearchData, UserProfileSummary } from "@/types";
+import type {
+  Platform,
+  SearchData,
+  ShortlistItem,
+  UserProfileSummary,
+} from "@/types";
 
 const platformData: Record<Platform, SearchData> = {
   instagram: instagramData as SearchData,
@@ -37,4 +42,20 @@ export function getPlatformLabel(platform: Platform): string {
   if (platform === "instagram") return "Instagram";
   if (platform === "youtube") return "YouTube";
   return "TikTok";
+}
+
+/** Project a (summary or full) profile into the minimal shape we persist. */
+export function toShortlistItem(
+  profile: UserProfileSummary,
+  platform: Platform
+): ShortlistItem {
+  return {
+    user_id: profile.user_id,
+    username: profile.username,
+    fullname: profile.fullname,
+    picture: profile.picture,
+    followers: profile.followers,
+    is_verified: profile.is_verified,
+    platform,
+  };
 }
