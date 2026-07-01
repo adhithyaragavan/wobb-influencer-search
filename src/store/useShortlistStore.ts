@@ -37,6 +37,16 @@ export const useShortlistStore = create<ShortlistState>()(
     {
       name: "wobb:shortlist",
       version: 1,
+      // Defends against corrupted/hand-edited localStorage (e.g. `items`
+      // missing or not an array), which would otherwise crash the first
+      // `.some()`/`.filter()` call on the store. Also the hook point for a
+      // real migration the next time the persisted shape changes.
+      merge: (persisted, current) => ({
+        ...current,
+        items: Array.isArray((persisted as Partial<ShortlistState> | undefined)?.items)
+          ? (persisted as ShortlistState).items
+          : current.items,
+      }),
     }
   )
 );

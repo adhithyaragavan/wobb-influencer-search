@@ -1,13 +1,34 @@
+import { useMemo } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ShortlistButton } from "@/components/ShortlistButton";
-import type { Platform } from "@/types";
+import type { FullUserProfile, Platform } from "@/types";
 import { formatCompact, formatEngagementRate } from "@/utils/formatters";
 import { PLATFORMS, getPlatformLabel, toShortlistItem } from "@/utils/dataHelpers";
 import { useProfile } from "@/hooks/useProfile";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+
+type Stat = { label: string; value: string | number };
+
+function buildStats(user: FullUserProfile): Stat[] {
+  const stats: Stat[] = [
+    { label: "Followers", value: formatCompact(user.followers) },
+    { label: "Engagement Rate", value: formatEngagementRate(user.engagement_rate) },
+  ];
+  if (user.engagements !== undefined)
+    stats.push({ label: "Engagements", value: user.engagements.toLocaleString() });
+  if (user.posts_count !== undefined)
+    stats.push({ label: "Posts", value: user.posts_count.toLocaleString() });
+  if (user.avg_likes !== undefined)
+    stats.push({ label: "Avg Likes", value: formatCompact(user.avg_likes) });
+  if (user.avg_comments !== undefined)
+    stats.push({ label: "Avg Comments", value: formatCompact(user.avg_comments) });
+  if (user.avg_views !== undefined && user.avg_views > 0)
+    stats.push({ label: "Avg Views", value: formatCompact(user.avg_views) });
+  return stats;
+}
 
 function StatTile({ label, value }: { label: string; value: string | number }) {
   return (
@@ -38,6 +59,7 @@ export function ProfileDetailPage() {
   const platform = isValidPlatform ? (platformParam as Platform) : null;
   const platformLabel = platform ? getPlatformLabel(platform) : "Unknown";
   const { profile: user, status } = useProfile(username);
+  const stats = useMemo(() => (user ? buildStats(user) : []), [user]);
 
   useDocumentTitle(
     !username
@@ -82,21 +104,6 @@ export function ProfileDetailPage() {
       </Layout>
     );
   }
-
-  const stats: { label: string; value: string | number }[] = [
-    { label: "Followers", value: formatCompact(user.followers) },
-    { label: "Engagement Rate", value: formatEngagementRate(user.engagement_rate) },
-  ];
-  if (user.engagements !== undefined)
-    stats.push({ label: "Engagements", value: user.engagements.toLocaleString() });
-  if (user.posts_count !== undefined)
-    stats.push({ label: "Posts", value: user.posts_count.toLocaleString() });
-  if (user.avg_likes !== undefined)
-    stats.push({ label: "Avg Likes", value: formatCompact(user.avg_likes) });
-  if (user.avg_comments !== undefined)
-    stats.push({ label: "Avg Comments", value: formatCompact(user.avg_comments) });
-  if (user.avg_views !== undefined && user.avg_views > 0)
-    stats.push({ label: "Avg Views", value: formatCompact(user.avg_views) });
 
   return (
     <Layout title="">

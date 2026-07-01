@@ -14,7 +14,7 @@ const platformData: Record<Platform, SearchData> = {
   tiktok: tiktokData as SearchData,
 };
 
-export function getSearchData(platform: Platform): SearchData {
+function getSearchData(platform: Platform): SearchData {
   return platformData[platform];
 }
 

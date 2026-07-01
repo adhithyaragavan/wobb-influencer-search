@@ -7,9 +7,10 @@ import { ShortlistPanel } from "./ShortlistPanel";
 interface LayoutProps {
   children: ReactNode;
   title?: string;
+  subtitle?: ReactNode;
 }
 
-export function Layout({ children, title }: LayoutProps) {
+export function Layout({ children, title, subtitle }: LayoutProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const count = useShortlistStore((s) => s.items.length);
 
@@ -56,10 +57,15 @@ export function Layout({ children, title }: LayoutProps) {
       </header>
 
       <main inert={panelOpen} className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">
-        {title && (
-          <h1 className="mb-6 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            {title}
-          </h1>
+        {(title || subtitle) && (
+          <div className="mb-6">
+            {title && (
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                {title}
+              </h1>
+            )}
+            {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+          </div>
         )}
         {children}
       </main>

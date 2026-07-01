@@ -21,11 +21,10 @@ export function SearchPage() {
   );
 
   return (
-    <Layout title="Find Influencers">
-      <p className="-mt-4 mb-6 text-sm text-slate-500">
-        Browse top creators across Instagram, YouTube, and TikTok.
-      </p>
-
+    <Layout
+      title="Find Influencers"
+      subtitle="Browse top creators across Instagram, YouTube, and TikTok."
+    >
       <PlatformFilter
         selected={platform}
         onChange={(p) => {
