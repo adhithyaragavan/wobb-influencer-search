@@ -33,12 +33,16 @@ npm run preview  # preview the production build
 5. **Dead code removed** — the unused `SearchBar` component, the console-log-only `clickCount` state (which also had a stale-closure bug), and a leftover `data-search` attribute.
 6. **Broken install** — the starter listed `react-beautiful-dnd`, which is unused and incompatible with React 19, so a plain `npm install` failed with a peer-dependency error. Removed it; `npm install` now succeeds with no flags.
 7. **Stale-response race** — the detail page could overwrite fresh data with a slow response for a previous username. The new `useProfile` hook tags results by username and ignores stale ones.
+8. **YouTube search crash** — 3 sample YouTube channels have no `username` field (only `handle`), so typing a search called `.toLowerCase()` on `undefined` and crashed to a white screen; the same entries linked to `/profile/undefined`. Fixed by normalizing `username` (falling back to `handle`, then `user_id`) once in `extractProfiles`, and the raw JSON shape is now typed honestly (`RawSearchProfile`, optional `username`) instead of lying via an unchecked cast.
+9. **Shortlist platform mislabel** — opening a profile via a direct/bookmarked URL with no `?platform=` param showed "Unknown" on screen but silently saved the shortlisted item as `instagram`. The Add-to-list button is now disabled (with an explanatory tooltip) instead of guessing in that case.
+10. **Invalid HTML / accessibility**: the profile card nested a `<button>` inside a `<Link>` (`<a>`), which the HTML spec disallows and which assistive tech handles inconsistently — restructured to the "stretched link" pattern. The shortlist drawer (`role="dialog"`) had no `Escape`-to-close, no focus management, and let keyboard focus leak into the page behind it — now focuses itself on open, restores focus to the trigger on close, closes on `Escape`, and marks the background `inert` while open. The platform filter declared ARIA `tablist`/`tab` roles without the arrow-key behavior that implies — simplified to plain toggle buttons (`aria-pressed`) that match how they actually behave.
 
 ### Features & UX
 - Introduced **Zustand** with the `persist` middleware for the shortlist store (`src/store/useShortlistStore.ts`). *Note: the starter did not actually use React Context or any state management — so "replace Context with Zustand" is realized here as introducing Zustand as the single source of truth for the shortlist.*
 - Full **UI/UX redesign** (clean light SaaS): sticky header with live shortlist count, card grid, pill platform tabs, redesigned profile page, empty/loading/error states.
 - **Accessibility:** cards are real `<Link>`s (keyboard-focusable), all images have `alt` text, the external link uses `rel="noopener noreferrer"`, icon-only buttons have `aria-label`s, the verified badge is labeled, the result count is an `aria-live` region, and everything has visible focus rings.
-- **Performance:** `useMemo` for the derived profile lists, `React.memo` on `ProfileCard`, and a **debounced** search input (`useDebouncedValue`) so filtering doesn't run on every keystroke.
+- **Performance:** `useMemo` for the derived profile lists and detail-page stats, `React.memo` on `ProfileCard`, and a **debounced** search input (`useDebouncedValue`) that flushes instantly on clear (so switching platforms mid-search doesn't briefly show stale-filtered results) but debounces normal typing.
+- **Type safety:** raw search JSON and normalized profile data now have distinct types (`RawSearchProfile` vs. `UserProfileSummary`), so a future data-shape drift is a type error at the extraction boundary instead of a silent `undefined`. `FullUserProfile` was trimmed of fields the JSON has but the UI never renders (`gender`, `age_group`, `is_business`, `type`, `avg_reels_plays`). The profile-detail loader validates the loaded JSON's shape at runtime instead of blindly casting it, falling back to the existing "could not load" state if it's malformed.
 
 ### Structure
 ```
@@ -75,9 +79,10 @@ src/
 
 ## Remaining improvements
 - Automated tests (unit tests for the store/formatters, a Playwright happy-path).
+- `useIsShortlisted` does an O(n) scan per card on every store update — fine at this data size, would want an indexed lookup (`Set`/`Record`) if the shortlist or result list grew much larger.
 - List virtualization if the dataset grows large.
 - Deployment (Vercel/Netlify) — not set up for this submission.
-- URL-synced filters (shareable search state) and richer profile analytics (the JSON includes `stat_history`).
+- URL-synced filters (shareable search state) and richer profile analytics (the JSON includes `stat_history`, not currently surfaced).
 
 ## Verification
-`npm run build` and `npm run lint` pass. The app was verified end-to-end (headless Chrome): search is case-insensitive, engagement rate/engagements render correctly, add/remove dedupes by `user_id`, the shortlist survives a page reload, the layout reflows to a single column on mobile, and cards are keyboard-navigable.
+`npm run build` and `npm run lint` pass. The app was verified end-to-end with a headless-Chrome regression pass covering: case-insensitive search on all three platforms (including the YouTube crash fix), a real profile detail page rendering correct stats, the graceful "could not load" fallback for profiles with no detail JSON, the platform-mislabel fix (disabled Add-to-list + "Unknown" label on param-less URLs), the full add/dedupe/persist-after-reload/remove shortlist flow, per-route document titles, zero invalid `<button>`-in-`<a>` nesting, and the shortlist dialog's focus management (focus-in-on-open, `Escape`-to-close, focus-restore-on-close, background `inert` while open) — all with zero console/page errors.
